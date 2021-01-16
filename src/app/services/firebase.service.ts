@@ -3,7 +3,8 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { AngularFirestore } from '@angular/fire/firestore';
 import firebase from 'firebase/app';
 import { switchMap, map } from 'rxjs/operators';
-import { Observable } from 'rxjs'
+import { Observable } from 'rxjs';
+import * as CryptoJS from 'crypto-js'; 
 
 export interface User {
   uid: string;
@@ -24,6 +25,7 @@ export interface Message {
 })
 export class FirebaseService {
   currentUser: User = null;
+  secretKey: "marzam23";
 
   constructor( private afAuth: AngularFireAuth, private afs: AngularFirestore) {
       this.afAuth.onAuthStateChanged((user) => {
@@ -71,11 +73,12 @@ export class FirebaseService {
         return this.afs.collection('messages', ref => ref.orderBy('createdAt')).valueChanges({ idField: 'id' }) as Observable<Message[]>;
       }),
       map(messages => {
-        // Get the real name for each user
-        for (let m of messages) {          
+        // Obtener el nombre del usuario y desencriptamos el mensaje
+        for (let m of messages) {
+          m.msg = CryptoJS.AES.decrypt(m.msg, "marzam23").toString(CryptoJS.enc.Utf8);          
           m.fromName = this.getUserForMsg(m.from, users);
           m.myMsg = this.currentUser.uid === m.from;
-        }        
+        }       
         return messages
       })
     )
